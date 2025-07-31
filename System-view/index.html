@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>System Info Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .dark-mode {
+            background-color: #121212;
+            color: #f0f0f0;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            color: #0d6efd;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        .buttons {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            border: none;
+            background-color: #0d6efd;
+            color: #fff;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #0b5ed7;
+            transform: scale(1.05);
+        }
+
+        #cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 10px;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            animation: slideUp 0.8s ease-in-out;
+        }
+
+        .dark-mode .card {
+            background-color: #1e1e1e;
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+        }
+
+        .card:hover {
+            transform: translateY(-10px)scale(1.02);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #0d6efd;
+        }
+
+        .dark-mode h2 {
+            color: #66b2ff;
+        }
+
+        pre {
+            font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+            font-size: 17px;
+            font-weight: 700;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin-top: 10px;
+            color: #444;
+        }
+
+        .dark-mode pre {
+            color: #ddd;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 600px) {
+    h1 {
+        font-size: 1.8em;
+    }
+    button {
+        font-size: 14px;
+        padding: 8px 16px;
+    }
+    pre {
+        font-size: 15px;
+    }
+}
+
+    </style>
+</head>
+<body>
+    <h1>System Info Dashboard</h1>
+    <div class="buttons">
+        <button onclick="fetchAllInfo()">🔄 Refresh Info</button>
+        <button onclick="toggleDarkMode()">🌙 Toggle Dark Mode</button>
+    </div>
+
+    <div id="cards">
+        <div class="card" id="cpuCard"><h2>CPU Info</h2><pre></pre></div>
+        <div class="card" id="memoryCard"><h2>Memory Info</h2><pre></pre></div>
+        <div class="card" id="userCard"><h2>User Info</h2><pre></pre></div>
+        <div class="card" id="processCard"><h2>Process Info</h2><pre></pre></div>
+        <div class="card" id="osCard"><h2>OS Info</h2><pre></pre></div>
+        <div class="card" id="networkCard"><h2>Network Info</h2><pre></pre></div>
+    </div>
+
+    <script>
+        function fetchAllInfo() {
+            fetch('http://localhost:4000/all')
+                .then(res => res.json())
+                .then(data => {
+                    updateCard('cpuCard', data.cpu);
+                    updateCard('memoryCard', data.memory);
+                    updateCard('userCard', data.user);
+                    updateCard('processCard', data.process);
+                    updateCard('osCard', data.os);
+                    updateCard('networkCard', data.network, true);
+                })
+                .catch(error => {
+                    alert('Failed to fetch data: ' + error);
+                    console.error(error);
+                });
+        }
+
+        function updateCard(cardId, data, isNetwork = false) {
+            const card = document.getElementById(cardId);
+            const pre = card.querySelector('pre');
+            let output = '';
+
+            if (isNetwork) {
+                for (let iface in data) {
+                    output += `Interface: ${iface}\n`;
+                    data[iface].forEach(item => {
+                        for (let key in item) {
+                            output += `  ${key}: ${item[key]}\n`;
+                        }
+                        output += '\n';
+                    });
+                    output += '\n';
+                }
+            } else {
+                for (let key in data) {
+                    if (typeof data[key] === 'object' && data[key] !== null) {
+                        output += `${key}:\n`;
+                        for (let subKey in data[key]) {
+                            output += `  ${subKey}: ${data[key][subKey]}\n`;
+                        }
+                    } else {
+                        output += `${key}: ${data[key]}\n`;
+                    }
+                }
+            }
+
+            pre.textContent = output;
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+        }
+
+        window.onload = () => {
+            fetchAllInfo();
+            setInterval(fetchAllInfo, 10000); 
+        };
+    </script>
+</body>
+</html>
